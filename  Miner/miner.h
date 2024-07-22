@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 class Miner {
-protected:
+private:
     //Data members
     int id;
     int difficulty_target = 0;
