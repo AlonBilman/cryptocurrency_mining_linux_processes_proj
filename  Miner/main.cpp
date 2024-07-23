@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cstring>
 #include "miner.h"
-#include "message.h"
 #include "global.h"
 
 int main(int argc, char *argv[]) {
@@ -25,6 +24,7 @@ int main(int argc, char *argv[]) {
     check_fd(write(fd_miners_count,&id,sizeof(int)),CLOSE);
 
     close(fd_miners_count); //close the counter file.
+    
     Miner miner(id,fd_server,THIS_PATH);
     miner.start_mining();
      

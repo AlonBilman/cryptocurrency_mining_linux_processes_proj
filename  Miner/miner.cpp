@@ -1,38 +1,56 @@
 #include "miner.h"
-
+#include "serverMessage.h"
 
 Miner::Miner(int id_,int server_pipe_,const char* path): id(id_),server_pipe(server_pipe_) {
      
      std::string my_pipe_name = path;
      my_pipe_name.append("miner_pipe_"+id);
-     if(mkfifo(my_pipe_name.c_str(),0666))
-     {
-        //fail
-     } 
+
+     check_fd(mkfifo(my_pipe_name.c_str(),0666));
+     
      my_pipe=open(my_pipe_name.c_str(),O_RDONLY);
      check_fd(my_pipe);
-     //--------------------------------------------------------------------------------- 
      //making the connection message.
-     message_connect connect_req;
-     connect_req.my_pipe = my_pipe_name;
-     wrap_message(CONNECT_REQ,(void*)(&connect_req));
-     check_fd(write(server_pipe,&to_send,sizeof(to_send)));
-     
+     serverMessage connect_req(CONNECT_REQ,id);
 
-     //making the named pipe  
-     //errorCheck(my_pipe);
-    //send the server your pipe name 
-    //wait for the response of the first block.
-    //start mining.
+     connect_req.set_pipe_name(my_pipe_name);
+
+     std::string my_log_name= path;
+     my_log_name.append("mtacoin.log");
+     my_log=open(my_log_name.c_str(),O_RDWR | O_CREAT, 0644); //only I need to write
+     check_fd(my_log);
+
+     //redirect stdout to the log file.
+     if(dup2(my_log, STDOUT_FILENO)==-1)
+     {
+        //write an error.
+        exit(1);
+     }
+
+     check_fd(write(server_pipe,&connect_req,sizeof(serverMessage)),CLOSE);
+    //this will be written in the log file.
+     std::cout<<"Miner #"<<id<<" sent connect request on"<<my_pipe_name<<std::endl;
+
+    //this will block him untill recieving a block
+     check_fd(read(my_pipe,block,sizeof(Block)),CLOSE);
+
+     //update
+     std::cout<<"Miner #"<<id<<"received first block: ";
+     update_target_parameters();
+
+     //now I want it to be nonblocking, update the pipe mode to readonly + nonblocking
+     check_fd(fcntl(my_pipe, F_SETFL, O_RDONLY | O_NONBLOCK),CLOSE);
+     
+    //thats it for init miner.
 }
 
-void Miner::update_target_parameters(Block new_block) {
-    //if we read something, update. else return.
+void Miner::update_target_parameters() {
     
-    difficulty_target = new_block.get_difficulty();
-    height_target = new_block.get_height() + 1;
-    last_hash = new_block.get_hash();
+    difficulty_target = block->get_difficulty();
+    height_target = block->get_height() + 1;
+    last_hash = block->get_hash();
     nonce = 0; //init nonce
+    print_block_params();
 }
 
 unsigned int Miner::calculate_hash_code() {
@@ -45,10 +63,25 @@ unsigned int Miner::calculate_hash_code() {
     return crc_res;
 }
 
-void Miner::start_mining() {
-    while (true) {
-        update_target_parameters();
+void Miner::print_block_params()
+{
+    std::cout << "relayed_by(" << std::dec << block->get_relayed_by()
+            << "), height(" << std::dec << block->get_height() << "), timestamp(" << block->get_timestamp()
+            << "), hash(0x" << std::hex << block->get_hash() << std::dec << "), prev_hash(0x"
+            << std::hex << block->get_prev_hash() << std::dec << "), nonce("
+            << block->get_nonce() << ")" << std::endl;
+   
+}
 
+void Miner::start_mining() {
+
+    while (true) {
+        //update if there is a new block.
+        if(read(my_pipe,block,sizeof(Block))!=-1)
+        {
+            std::cout<<"Miner #"<<id<<"received block: ";
+            update_target_parameters();
+        }
         unsigned int crc_res = calculate_hash_code(); //this also updates the timestamp
         //if the miner hits the right hash:
         if ((crc_res >> (32 - difficulty_target)) == 0) //update the server "socket" or "mail-box"
@@ -56,34 +89,22 @@ void Miner::start_mining() {
             //change cout to the log file.
             std::cout << "Miner #" << id
                     << " mined a new Block #" << std::dec << height_target
-                    << ", With the hash 0x" << std::hex << crc_res << std::endl;
+                    << ", With the hash 0x" << std::hex << crc_res 
+                    << ", difficulty "<<difficulty_target<<std::endl;
 
-          
             //update and send block to server
             auto new_block = Block(last_hash, height_target, difficulty_target, nonce, crc_res, id,
                                    static_cast<int>(timestamp));
-            //write this block to the server pipe. 
+
+            //write this block to the server pipe.
+            serverMessage message(NEW_BLOCK,id);
+            message.set_block_data(new_block);
+            //we dont need to check, if there was an error, the miner keep going + its non blocking.
+            write(server_pipe,&message,sizeof(serverMessage)); 
         }
-        //the miners mine all the time, therefor while sending
-        //the new block to the server it will increase the nonce
-        //to try different nonce
+       //increase the nonce
         ++nonce;
     }
 }
 
-void Miner::wrap_message(int type, void* message)
-{
-   to_send.id=id;
-   to_send.type= type;
 
-   if(type==CONNECT_REQ)
-   {
-        to_send.connect = *static_cast<message_connect*>(message); 
-   }
-   else if(type==NEW_BLOCK)
-   {
-        to_send.block_mined=*static_cast<message_block*>(message);
-   }
-   //else dont do nothing, return.
-
-}
