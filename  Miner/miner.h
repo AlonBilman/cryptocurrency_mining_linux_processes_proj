@@ -1,14 +1,13 @@
 #pragma once
 #include <iostream>
 #include "block.h"
-#include "server.h"
 #include <zlib.h>
 #include <ctime>
-#include "global.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <string>
-
+#include "global.h"
+#include "message.h"
 class Miner {
 private:
     //Data members
@@ -18,17 +17,16 @@ private:
     int height_target = 1;
     int nonce = 0;
     int timestamp;
-    int miner_pipe;
-    std::string my_path = "/tmp/miner_pipe_";
+    int server_pipe;
+    int my_pipe;
+    message_to_server to_send;
 
 public:
-
     //constructor
-    Miner(int id);
-
+    Miner(int id,int server_pipe,const char* path);
     //functions
-    void update_target_parameters();
-
+    void update_target_parameters(Block new_block);
     virtual void start_mining();
     unsigned int calculate_hash_code();
+    void wrap_message(int type, void* message);
 };

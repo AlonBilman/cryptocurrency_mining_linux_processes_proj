@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 
-
 class Block {
 private:
     int height; // Incremental ID of the block in the chain

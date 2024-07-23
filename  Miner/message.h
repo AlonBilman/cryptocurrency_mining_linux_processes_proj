@@ -1,19 +1,21 @@
-#include <block.h>
+#include "block.h"
 
-typedef struct message_block
-{
-    char type;
+#define NEW_BLOCK 1
+#define CONNECT_REQ 2
+
+struct message_connect {
+    std::string my_pipe; 
+};
+
+struct message_block {
     Block data;
-    
-}message_block;
+};
 
-typedef struct message_connect
-{
-    char type;
-    std::string my_pipe;
-}message_connect;
-
-typedef struct new_block
-{
-    Block data;
-}new_block;
+struct message_to_server {
+    int type; // connection (CONNECT_REQ) or new block (NEW_BLOCK)
+    int id; // miner's id
+    union {
+        message_connect connect;
+        message_block block_mined;
+    };
+};
