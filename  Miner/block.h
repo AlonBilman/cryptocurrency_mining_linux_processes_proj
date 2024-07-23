@@ -12,7 +12,6 @@ private:
     int nonce; // Incremental integer to change the hash value
     int relayed_by; // Miner ID
 
-
 public:
     Block(); // empty constructor
     Block(unsigned int prev_hash, int height, int difficulty, int nonce, int hash, int relayed_by,

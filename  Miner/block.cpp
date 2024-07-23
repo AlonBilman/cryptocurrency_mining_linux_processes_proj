@@ -10,7 +10,6 @@ Block::Block() {
     this->timestamp = 0;
 }
 
-
 //creating a block - mostly used by the miners.
 Block::Block(unsigned int prev_hash, int height, int difficulty, int nonce, int hash, int relayed_by, int timestamp) {
     this->prev_hash = prev_hash;

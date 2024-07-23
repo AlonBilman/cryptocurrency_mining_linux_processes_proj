@@ -5,7 +5,9 @@
 #include <zlib.h>
 #include <ctime>
 #include "global.h"
-#include <pthread.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <string>
 
 class Miner {
 private:
@@ -16,17 +18,17 @@ private:
     int height_target = 1;
     int nonce = 0;
     int timestamp;
-    Server *my_server;
+    int miner_pipe;
+    std::string my_path = "/tmp/miner_pipe_";
 
 public:
-    static void *miner_thread_start(void *arg);
 
     //constructor
-    Miner(int id_, Server *my_server_);
+    Miner(int id);
 
     //functions
     void update_target_parameters();
 
-    virtual void start_mining(); //to be overridden by fakeMiner
+    virtual void start_mining();
     unsigned int calculate_hash_code();
 };

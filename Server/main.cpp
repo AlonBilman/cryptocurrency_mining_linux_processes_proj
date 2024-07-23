@@ -6,6 +6,6 @@
 
 int main(int argc, char *argv[]) {
 
-    int server_pipe = mkfifo("linux_processes_task3/server_pipe",0666);
+    int server_pipe = mkfifo("server_pipe",0666);
     return 0;
 }
