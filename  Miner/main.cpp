@@ -1,12 +1,13 @@
+#pragma once
 #include <iostream>
 #include <cstring>
 #include "miner.h"
 #include "global.h"
 
 int main(int argc, char *argv[]) {
-
+ 
     //get the server pipe path:
-    std::string server_path = THIS_PATH; 
+    std::string server_path = THIS_PATH;
     server_path.append(SERVER_PIPE_NAME);
     std::string miners_count = THIS_PATH;
     miners_count.append(MINERS_COUNT);

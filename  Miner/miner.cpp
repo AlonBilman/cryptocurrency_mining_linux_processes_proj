@@ -1,5 +1,5 @@
 #include "miner.h"
-#include "serverMessage.h"
+
 
 Miner::Miner(int id_,int server_pipe_,const char* path): id(id_),server_pipe(server_pipe_) {
      
