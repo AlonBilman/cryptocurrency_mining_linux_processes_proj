@@ -3,19 +3,23 @@
 #define NEW_BLOCK 1
 #define CONNECT_REQ 2
 
-class serverMessage {
-private:
-    int type; //type of message
+struct server_connect_message
+{
+    int type = CONNECT_REQ;
     int id;
-    std::string my_pipe={};
-    Block data=Block();
-public:
-   serverMessage(int type, int id):type(type),id(id){};
-   void set_pipe_name(std::string path){
-    my_pipe=path;
-    }
-   void set_block_data(Block &block){
-    data=block;
-    }
+    int data_size;
+    std::string my_pype={};
+
+    server_connect_message(int id, int data_size,std::string data):id(id),data_size(data_size),my_pype(data){}
+};
+
+struct server_block_message
+{
+    int type = NEW_BLOCK; //type of message
+    int id;
+    int data_size;
+    Block data;
+
+    server_block_message(int id, int data_size,Block data):id(id),data_size(data_size),data(data){}
 };
 

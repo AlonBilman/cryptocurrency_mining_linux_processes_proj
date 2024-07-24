@@ -8,6 +8,13 @@
 #include <string>
 #include "serverMessage.h"
 #include "global.h"
+enum 
+{
+    SERVER_PIPE,
+    MY_PIPE,
+    LOG_FILE,
+    SIZE
+};
 
 class Miner {
 private:
@@ -18,10 +25,8 @@ private:
     int height_target = 1;
     int nonce = 0;
     int timestamp;
-    int server_pipe; //fd
-    int my_pipe; //fd
-    int my_log;  //fd
-    Block* block;
+    int fd[SIZE]={-1}; // fd arr
+    Block* block; //sends by the server. 
 
 public:
     //constructor

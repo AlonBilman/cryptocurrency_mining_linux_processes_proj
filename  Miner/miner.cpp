@@ -1,45 +1,49 @@
 #include "miner.h"
 
 
-Miner::Miner(int id_,int server_pipe_,const char* path): id(id_),server_pipe(server_pipe_) {
-     
-     std::string my_pipe_name = path;
-     my_pipe_name.append("miner_pipe_"+id);
+Miner::Miner(int id_,int server_pipe_,const char* path): id(id_){
 
-     check_fd(mkfifo(my_pipe_name.c_str(),0666));
-     
-     my_pipe=open(my_pipe_name.c_str(),O_RDONLY);
-     check_fd(my_pipe);
-     //making the connection message.
-     serverMessage connect_req(CONNECT_REQ,id);
-
-     connect_req.set_pipe_name(my_pipe_name);
+    fd[SERVER_PIPE] = server_pipe_;
 
      std::string my_log_name= path;
-     my_log_name.append("mtacoin.log");
-     my_log=open(my_log_name.c_str(),O_RDWR | O_CREAT, 0644); //only I need to write
-     check_fd(my_log);
+     my_log_name.append(LOG_NAME);
+     fd[LOG_FILE] = open(my_log_name.c_str(),O_RDWR | O_CREAT, 0644); //only I need to write
+     check_fd(fd[LOG_FILE],fd,SIZE);
 
-     //redirect stdout to the log file.
-     if(dup2(my_log, STDOUT_FILENO)==-1)
+     //redirect stdout and stderr to the log file...
+     if(dup2(fd[LOG_FILE], STDOUT_FILENO)||dup2(fd[LOG_FILE],STDERR_FILENO) ==-1)
      {
-        //write an error.
+        perror("Error on redirecting STDOUT or STDERR");
+        close(fd[LOG_FILE]);
+        close(fd[SERVER_PIPE]);
         exit(1);
      }
 
-     check_fd(write(server_pipe,&connect_req,sizeof(serverMessage)),CLOSE);
+     //opening my pipe.
+     std::string my_pipe_name = path;
+     my_pipe_name.append(BASE_PIPE_NAME +id);
+
+     check_fd(mkfifo(my_pipe_name.c_str(),0666),fd,SIZE);
+     
+     fd[MY_PIPE]=open(my_pipe_name.c_str(),O_RDONLY);
+     check_fd(fd[MY_PIPE],fd,SIZE);
+
+     //making the connection message. -  NEED TO BE FIXED TO A BETTER WAY 
+     server_connect_message connect_req(id,sizeof(my_pipe_name),my_pipe_name);
+
+     check_fd(write(fd[SERVER_PIPE],&connect_req,sizeof(connect_req)),fd,SIZE);
     //this will be written in the log file.
      std::cout<<"Miner #"<<id<<" sent connect request on"<<my_pipe_name<<std::endl;
 
     //this will block him untill recieving a block
-     check_fd(read(my_pipe,block,sizeof(Block)),CLOSE);
+     check_fd(read(fd[MY_PIPE],block,sizeof(Block)),fd,SIZE);
 
      //update
      std::cout<<"Miner #"<<id<<"received first block: ";
      update_target_parameters();
 
      //now I want it to be nonblocking, update the pipe mode to readonly + nonblocking
-     check_fd(fcntl(my_pipe, F_SETFL, O_RDONLY | O_NONBLOCK),CLOSE);
+     check_fd(fcntl(fd[MY_PIPE], F_SETFL, O_RDONLY | O_NONBLOCK),fd,SIZE);
      
     //thats it for init miner.
 }
@@ -77,7 +81,7 @@ void Miner::start_mining() {
 
     while (true) {
         //update if there is a new block.
-        if(read(my_pipe,block,sizeof(Block))!=-1)
+        if(read(fd[MY_PIPE],block,sizeof(Block))!=-1)
         {
             std::cout<<"Miner #"<<id<<"received block: ";
             update_target_parameters();
@@ -97,10 +101,10 @@ void Miner::start_mining() {
                                    static_cast<int>(timestamp));
 
             //write this block to the server pipe.
-            serverMessage message(NEW_BLOCK,id);
-            message.set_block_data(new_block);
+            server_block_message message(id,sizeof(new_block),new_block);
+
             //we dont need to check, if there was an error, the miner keep going + its non blocking.
-            write(server_pipe,&message,sizeof(serverMessage)); 
+            write(fd[SERVER_PIPE],&message,sizeof(message)); //return->log
         }
        //increase the nonce
         ++nonce;

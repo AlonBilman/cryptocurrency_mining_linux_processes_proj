@@ -9,7 +9,8 @@
 extern const char* THIS_PATH;
 extern const char* SERVER_PIPE_NAME;
 extern const char* CONF_NAME;
-extern const char* MINERS_COUNT;
+extern const char* BASE_PIPE_NAME;
+extern const char* LOG_NAME;
 
-void check_fd(int fd);
-void check_fd(int fd, bool close_);
+
+void check_fd(int fd,int* fds,int size);
