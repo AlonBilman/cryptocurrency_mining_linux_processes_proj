@@ -1,12 +1,16 @@
 #pragma once
-#include <pthread.h>
-#include <zlib.h>
-#include <string>
-#include "zlib.h"
 #include <iostream>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-#define MAX_CHAIN_SIZE 100
+#define CLOSE true
 
-unsigned int hash(int height, int nonce, time_t timestamp, unsigned int last_hash, int id);
+extern const char* THIS_PATH;
+extern const char* SERVER_PIPE_NAME;
+extern const char* CONF_NAME;
+extern const char* BASE_PIPE_NAME;
+extern const char* LOG_NAME;
 
-void processArguments(int number_of_arguments, char *the_arguments[]);
+
+void check_fd(int fd,int* fds,int size);

@@ -1,11 +1,20 @@
 #pragma once
 #include <iostream>
 #include "block.h"
-#include "server.h"
 #include <zlib.h>
 #include <ctime>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <string>
+#include "serverMessage.h"
 #include "global.h"
-#include <pthread.h>
+enum 
+{
+    SERVER_PIPE,
+    MY_PIPE,
+    LOG_FILE,
+    SIZE
+};
 
 class Miner {
 private:
@@ -16,17 +25,15 @@ private:
     int height_target = 1;
     int nonce = 0;
     int timestamp;
-    Server *my_server;
+    int fd[SIZE]={-1}; // fd arr
+    Block* block; //sends by the server. 
 
 public:
-    static void *miner_thread_start(void *arg);
-
     //constructor
-    Miner(int id_, Server *my_server_);
-
+    Miner(int id,int server_pipe,const char* path);
     //functions
     void update_target_parameters();
-
-    virtual void start_mining(); //to be overridden by fakeMiner
+    void start_mining();
     unsigned int calculate_hash_code();
+    void print_block_params();
 };

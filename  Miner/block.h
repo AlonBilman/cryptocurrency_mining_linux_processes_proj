@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-
+#include <string>
 
 class Block {
 private:
@@ -11,7 +11,6 @@ private:
     int difficulty; // Amount of preceding zeros in the hash
     int nonce; // Incremental integer to change the hash value
     int relayed_by; // Miner ID
-
 
 public:
     Block(); // empty constructor
