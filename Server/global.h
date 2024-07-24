@@ -11,3 +11,9 @@ extern const char* BASE_PIPE_NAME;
 extern const char* LOG_NAME;
 
 void check_fd(int fd, int my_log, int my_pipe);
+
+struct msg{
+    int type;
+    int id;
+    int size;
+};

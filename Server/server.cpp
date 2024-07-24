@@ -1,7 +1,6 @@
 #include "server.h"
 #define NO_FD -1
 
-
 Server::Server()
 {   
      std::string my_log_name= THIS_PATH;
@@ -54,7 +53,6 @@ bool Server::verify_proof_of_work_(Block &block_to_check) {
         return false;
     }
 
-
     unsigned int hash_test = //this calculates the hash
             hash(block_to_check.get_height(), block_to_check.get_nonce(), (block_to_check.get_timestamp()),
                  block_to_check.get_prev_hash(), block_to_check.get_relayed_by());
@@ -81,28 +79,40 @@ void Server::add_block_(Block &block_to_add) //adding to block_chain. making sur
 }
 
 void Server::start() {
-    std::cout<<"listening on "<</*path*/""<<std::endl;
+    //reading buffers
+    std::string data_name;
+    std::cout<<"listening on "<<THIS_PATH<<SERVER_PIPE_NAME<<std::endl;
 
-
-
-
-    while (true) {
+    while (true) 
+    {
         //wait on pipe. start listening...
-        //decode 
-        Block curr_block_to_check = next_block; //copying the block
+        msg read_m; 
+        read(my_pipe,&read_m,sizeof(read_m)); // size of 3 ints.
+        switch (read_m.type)
+        {
+        case CONNECT_REQ:
+            read(my_pipe,&data_name,read_m.size);
+            std::cout<<"Recieved connection request from miner #"<<read_m.id<<"pipe name: "<<data_name<<std::endl;
+            update_miners_pipes(data_name); //this will open the file to read
+            //writing the miner pipe the curr block. 
+            write(miners_pipes[read_m.id+1],&block_chain.front(),sizeof(Block));
+            break;
 
-        if (verify_proof_of_work_(curr_block_to_check))
-            add_block_(curr_block_to_check);
-            //+write to all the pipes.
+        case NEW_BLOCK:
+            read(my_pipe,&next_block,read_m.size);
+            if (verify_proof_of_work_(next_block))
+            {
+                add_block_(next_block);
+                for(int i=0;i<miners_pipes.size();++i)
+                    write(miners_pipes[i],&next_block,sizeof(Block));
+            }
+            break;
+        default:
+            std::cout<<"Could not identify the message..."<<std::endl;
+            break;
+        }
     }
 }
-
-/*
-void Server::check_new_block(Block &new_block) {
-    next_block = new_block; 
-}
-
-*/
 
 //Block data getters
 int Server::get_latest_block_height() {
@@ -110,12 +120,10 @@ int Server::get_latest_block_height() {
     return res;
 }
 
-
 unsigned int Server::get_latest_block_hash() {
     auto res = block_chain.front().get_hash();
     return res;
 }
-
 
 int Server::get_latest_block_difficulty() {
     auto res = block_chain.front().get_difficulty();
@@ -131,7 +139,6 @@ unsigned int hash(int height, int nonce, time_t timestamp, unsigned int last_has
     //reinterpret cast is used to cast the pointer.
     return crc_res;
 }
-
 
 void Server::set_difficulty()
 {
@@ -156,10 +163,19 @@ void Server::set_difficulty()
     else {
         //this will be written inside the log file
         std::cout << "Error opening config file..."<<std::endl;
-        std::cout<<"Assign difficulty=8 by diffult..."<<std::endl;
+        std::cout<<"difficulty set to 8 by default..."<<std::endl;
         difficulty_target = 8;
     }
 
     difficulty_target = difficulty;
+    std::cout<<"Difficulty set to "<<difficulty<<std::endl;
 }
 
+void Server::update_miners_pipes(std::string path)
+{
+    int add_fd = open(path.c_str(),O_WRONLY | O_NONBLOCK); 
+    if(add_fd==-1)
+        std::cout<<"Error on opening fd from miner"<<std::endl;
+    else
+        miners_pipes.push_back(add_fd); //update the pipes vector.
+}

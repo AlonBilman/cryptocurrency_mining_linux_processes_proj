@@ -8,6 +8,9 @@
 #include "global.h"
 
 #define MAX_CHAIN_SIZE 100
+#define NEW_BLOCK 1
+#define CONNECT_REQ 2
+
 
 class Server {
 private:
@@ -26,8 +29,6 @@ private: //Private functions
 
     void add_block_(Block &block_to_add);
 
-    void notify_miners();
-
     void print_last_block_(Block &block_added);
 
 public:
@@ -37,7 +38,7 @@ public:
     //Member functions
     void start();
 
-    //void check_new_block(Block &new_block);
+    void update_miners_pipes(std::string path);
 
     //Block data getters
     int get_latest_block_height();
@@ -49,6 +50,4 @@ public:
     unsigned int hash(int height, int nonce, time_t timestamp, unsigned int last_hash, int id);
 
     void set_difficulty();
-
-    void connect_answer();
 };
