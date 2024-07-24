@@ -1,42 +1,43 @@
 #pragma once
 #include <iostream>
 #include <list>
+#include <vector>
 #include "block.h"
 #include <zlib.h>
+#include <fstream>
 #include "global.h"
+
+#define MAX_CHAIN_SIZE 100
 
 class Server {
 private:
     //Data members
     int number_of_blocks = 1;
-    const int difficulty_target;
+    int difficulty_target;
     std::list<Block> block_chain;
+    std::vector<int> miners_pipes;
+    int my_pipe;
+    int my_log;
     Block next_block;
 
-    //pthread objects
-    pthread_mutex_t bl_lock{};
-    pthread_cond_t cond{};
-
 private: //Private functions
+
     bool verify_proof_of_work_(Block &block_to_check);
 
     void add_block_(Block &block_to_add);
+
+    void notify_miners();
 
     void print_last_block_(Block &block_added);
 
 public:
     // Constructor
-    explicit Server(int difficulty_target);
-
-    //destructor
-    ~Server();
+    Server();
 
     //Member functions
-    static void *server_thread_start(void *arg);
+    void start();
 
-    [[noreturn]] void start();
-
-    void check_new_block(Block &new_block);
+    //void check_new_block(Block &new_block);
 
     //Block data getters
     int get_latest_block_height();
@@ -44,4 +45,10 @@ public:
     unsigned int get_latest_block_hash();
 
     int get_latest_block_difficulty();
+
+    unsigned int hash(int height, int nonce, time_t timestamp, unsigned int last_hash, int id);
+
+    void set_difficulty();
+
+    void connect_answer();
 };
