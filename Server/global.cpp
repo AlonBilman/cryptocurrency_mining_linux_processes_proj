@@ -21,3 +21,6 @@ void check_fd(int fd, int my_log, int my_pipe)
      }
         
 }
+
+void signal_handler() //SIGPIPE handler
+{}

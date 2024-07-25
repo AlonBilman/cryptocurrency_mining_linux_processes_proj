@@ -6,7 +6,7 @@ Server::Server()
      std::string my_log_name= THIS_PATH;
      my_log_name.append(LOG_NAME);
 
-     my_log = open(my_log_name.c_str(),O_RDWR | O_CREAT, 0644); //only I need to write
+     my_log = open(my_log_name.c_str(),O_WRONLY | O_CREAT, 0644); 
      check_fd(my_log,NO_FD,NO_FD); //sending -1, there is no fd to close...
 
      
@@ -16,7 +16,6 @@ Server::Server()
         std::cerr << "Error on redirecting STDOUT or STDERR" << std::endl;
         close(my_log); 
     }
-
 
      set_difficulty(); //getting the difficulty from the conf file and 
                         //setting up the difficulty lvl.
@@ -31,6 +30,8 @@ Server::Server()
      check_fd(mkfifo(my_pipe_name.c_str(),0666),my_log,NO_FD);
      my_pipe = open(my_pipe_name.c_str(),O_RDWR);
      check_fd(my_pipe,my_log,NO_FD);
+
+     signal(SIGPIPE,SIG_IGN); //handle it inside start(). dont want the server to die when a miner dies...
 
      std::cout<<"init finished"<<std::endl;
 }
@@ -88,14 +89,14 @@ void Server::start() {
  
     while (true) 
     {
-        //wait on pipe. start listening...check_fd(fcntl(fd[MY_PIPE], F_SETFL, O_RDONLY|O_NONBLOCK),fd,SIZE);
+        //wait on pipe. start listening...
         msg read_m; 
-        read(my_pipe,(void*)&read_m,sizeof(read_m)); // size of 3 ints.
+        read(my_pipe,&read_m,sizeof(read_m)); // size of 3 ints.
         switch (read_m.type)
         {
         case CONNECT_REQ:
-            read(my_pipe,(void*)&data_name,read_m.size);
-            std::cout<<"Recieved connection request from miner #"<<read_m.id<<"pipe name: "<<data_name<<std::endl;
+            read(my_pipe,&data_name,read_m.size);
+            std::cout<<"Recieved connection request from miner #"<<read_m.id<<" pipe name: "<<data_name<<std::endl;
             update_miners_pipes(data_name); //this will open the file to read
             //writing the miner pipe the curr block. 
             write(miners_pipes[read_m.id-1],&block_chain.front(),sizeof(Block));
@@ -107,12 +108,24 @@ void Server::start() {
             {
                 add_block_(next_block);
                 for(int i=0;i<miners_pipes.size();++i)
-                    write(miners_pipes[i],&next_block,sizeof(Block));
+                {
+                    if(miners_pipes[i]!=NO_FD) //if its a deleted fd 
+                    {
+                        write(miners_pipes[i],&next_block,sizeof(Block)); 
+                        //handling SIGPIPE
+                        if(errno == EPIPE) //error on write
+                                           //thats why we ignored ctrl+c sig.
+                        {
+                            close(miners_pipes[i]);
+                            miners_pipes[i]=NO_FD;
+                        }
+
+                    }
+                }
             }
             break;
         default:
             std::cout<<"Could not identify the message..."<<std::endl;
-            exit(-1);
             break;
         }
     }

@@ -6,6 +6,7 @@
 #include <zlib.h>
 #include <fstream>
 #include "global.h"
+#include <signal.h>
 
 #define MAX_CHAIN_SIZE 100
 #define NEW_BLOCK 1

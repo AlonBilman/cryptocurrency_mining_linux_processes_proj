@@ -3,6 +3,7 @@
 #include "block.h"
 #include <zlib.h>
 #include <ctime>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <string>
@@ -27,7 +28,7 @@ private:
     int nonce = 0;
     int timestamp;
     int fd[SIZE]={-1}; // fd arr
-    Block* block; //sends by the server. 
+    Block block; //sends by the server. 
 
 public:
     //constructor

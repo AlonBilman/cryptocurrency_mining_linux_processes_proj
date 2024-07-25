@@ -9,7 +9,6 @@ int create_miner_id();
 
 
 int main(int argc, char *argv[]) {
- 
     //get the server pipe path:
     std::string server_path = THIS_PATH;
     server_path.append(SERVER_PIPE_NAME);
@@ -28,12 +27,13 @@ int main(int argc, char *argv[]) {
 
 
 //find the max id, return id+1
+
 int create_miner_id() 
 {
     int new_id =0; 
     for(auto& name : std::filesystem::directory_iterator(THIS_PATH))
     {
-        if(name.is_regular_file())
+        if(name.is_fifo())
         {
             std::string get_name = name.path().filename().string(); //get the name and convert it to a string.
             //check if the filename start with "miner_pipe_" and extract the number with sscanf
@@ -48,4 +48,3 @@ int create_miner_id()
     //if nothing was found, return 1. 
     return ++new_id;
 }
-
