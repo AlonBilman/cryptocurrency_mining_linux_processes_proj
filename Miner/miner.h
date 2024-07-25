@@ -8,6 +8,7 @@
 #include <string>
 #include "serverMessage.h"
 #include "global.h"
+
 enum 
 {
     SERVER_PIPE,

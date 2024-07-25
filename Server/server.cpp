@@ -2,20 +2,21 @@
 #define NO_FD -1
 
 Server::Server()
-{   
+{  
      std::string my_log_name= THIS_PATH;
      my_log_name.append(LOG_NAME);
 
      my_log = open(my_log_name.c_str(),O_RDWR | O_CREAT, 0644); //only I need to write
      check_fd(my_log,NO_FD,NO_FD); //sending -1, there is no fd to close...
 
+     
      //redirect stdout and stderr to the log file...
-     if(dup2(my_log, STDOUT_FILENO)||dup2(my_log,STDERR_FILENO) ==-1)
-     {
-        perror("Error on redirecting STDOUT or STDERR");
-        close(my_log);
-        exit(EXIT_FAILURE);
-     }
+    if (dup2(my_log, STDOUT_FILENO) == -1 || dup2(my_log, STDERR_FILENO) == -1)
+    {
+        std::cerr << "Error on redirecting STDOUT or STDERR" << std::endl;
+        close(my_log); 
+    }
+
 
      set_difficulty(); //getting the difficulty from the conf file and 
                         //setting up the difficulty lvl.
@@ -23,12 +24,15 @@ Server::Server()
     next_block.set_difficulty(difficulty_target);
     block_chain.push_front(next_block);
     
+    
      //opening my pipe.
      std::string my_pipe_name = THIS_PATH;
      my_pipe_name.append(SERVER_PIPE_NAME);
      check_fd(mkfifo(my_pipe_name.c_str(),0666),my_log,NO_FD);
-     my_pipe = open(my_pipe_name.c_str(),O_RDONLY);
+     my_pipe = open(my_pipe_name.c_str(),O_RDWR);
      check_fd(my_pipe,my_log,NO_FD);
+
+     std::cout<<"init finished"<<std::endl;
 }
 
 
@@ -67,7 +71,6 @@ bool Server::verify_proof_of_work_(Block &block_to_check) {
     return true; //if we survived all the checks.
 }
 
-
 void Server::add_block_(Block &block_to_add) //adding to block_chain. making sure that its secure
 {
     block_chain.push_front(block_to_add);
@@ -80,22 +83,22 @@ void Server::add_block_(Block &block_to_add) //adding to block_chain. making sur
 
 void Server::start() {
     //reading buffers
-    std::string data_name;
+    char data_name[256];
     std::cout<<"listening on "<<THIS_PATH<<SERVER_PIPE_NAME<<std::endl;
-
+ 
     while (true) 
     {
-        //wait on pipe. start listening...
+        //wait on pipe. start listening...check_fd(fcntl(fd[MY_PIPE], F_SETFL, O_RDONLY|O_NONBLOCK),fd,SIZE);
         msg read_m; 
-        read(my_pipe,&read_m,sizeof(read_m)); // size of 3 ints.
+        read(my_pipe,(void*)&read_m,sizeof(read_m)); // size of 3 ints.
         switch (read_m.type)
         {
         case CONNECT_REQ:
-            read(my_pipe,&data_name,read_m.size);
+            read(my_pipe,(void*)&data_name,read_m.size);
             std::cout<<"Recieved connection request from miner #"<<read_m.id<<"pipe name: "<<data_name<<std::endl;
             update_miners_pipes(data_name); //this will open the file to read
             //writing the miner pipe the curr block. 
-            write(miners_pipes[read_m.id+1],&block_chain.front(),sizeof(Block));
+            write(miners_pipes[read_m.id-1],&block_chain.front(),sizeof(Block));
             break;
 
         case NEW_BLOCK:
@@ -109,6 +112,7 @@ void Server::start() {
             break;
         default:
             std::cout<<"Could not identify the message..."<<std::endl;
+            exit(-1);
             break;
         }
     }
@@ -133,7 +137,6 @@ int Server::get_latest_block_difficulty() {
 unsigned int hash(int height, int nonce, time_t timestamp, unsigned int last_hash, int id) {
     std::string data_to_hash = std::to_string(height) + std::to_string(nonce) + std::to_string(timestamp) +
                                std::to_string(last_hash) + std::to_string(id);
-    uLong crc_res = 0;   std::to_string(last_hash) + std::to_string(id);
     uLong crc_res = 0;
     crc_res = crc32(crc_res, reinterpret_cast<const Bytef *>(data_to_hash.c_str()), data_to_hash.size());
     //reinterpret cast is used to cast the pointer.
@@ -154,7 +157,7 @@ void Server::set_difficulty()
         {
             if (line_read.find("DIFFICULTY=") == 0) 
             {
-                difficulty = std::stoi(line_read.substr(10)); //DIFFICULTY= -> 10 chars
+                difficulty = std::stoi(line_read.substr(11)); //DIFFICULTY= -> 10 chars
                 break; //stop
             }
         }
@@ -178,4 +181,14 @@ void Server::update_miners_pipes(std::string path)
         std::cout<<"Error on opening fd from miner"<<std::endl;
     else
         miners_pipes.push_back(add_fd); //update the pipes vector.
+}
+
+unsigned int Server::hash(int height, int nonce, time_t timestamp, unsigned int last_hash, int id) 
+{
+    std::string data_to_hash = std::to_string(height) + std::to_string(nonce) + std::to_string(timestamp) +
+                               std::to_string(last_hash) + std::to_string(id);
+    uLong crc_res = 0;
+    crc_res = crc32(crc_res, reinterpret_cast<const Bytef *>(data_to_hash.c_str()), data_to_hash.size());
+    //reinterpret cast is used to cast the pointer.
+    return crc_res;
 }

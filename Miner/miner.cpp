@@ -11,31 +11,36 @@ Miner::Miner(int id_,int server_pipe_,const char* path): id(id_){
      check_fd(fd[LOG_FILE],fd,SIZE);
 
      //redirect stdout and stderr to the log file...
-     if(dup2(fd[LOG_FILE], STDOUT_FILENO)||dup2(fd[LOG_FILE],STDERR_FILENO) ==-1)
-     {
+     if (dup2(fd[LOG_FILE], STDOUT_FILENO) == -1 || dup2(fd[LOG_FILE], STDERR_FILENO) == -1)
+    {
         perror("Error on redirecting STDOUT or STDERR");
-        close(fd[LOG_FILE]);
-        close(fd[SERVER_PIPE]);
-        exit(1);
-     }
-
+        close(fd[LOG_FILE]);   
+        close(fd[SERVER_PIPE]); 
+        exit(1);               
+    }
      //opening my pipe.
      std::string my_pipe_name = path;
-     my_pipe_name.append(BASE_PIPE_NAME +id);
+     my_pipe_name.append(BASE_PIPE_NAME);
+     my_pipe_name.append(std::to_string(id));
 
      check_fd(mkfifo(my_pipe_name.c_str(),0666),fd,SIZE);
      
-     fd[MY_PIPE]=open(my_pipe_name.c_str(),O_RDONLY);
+     fd[MY_PIPE]=open(my_pipe_name.c_str(),O_RDONLY| O_NONBLOCK);
      check_fd(fd[MY_PIPE],fd,SIZE);
-
+    
      //making the connection message. -  NEED TO BE FIXED TO A BETTER WAY 
-     server_connect_message connect_req(id,sizeof(my_pipe_name),my_pipe_name);
 
+     server_connect_message connect_req(id);
+    strcpy(connect_req.buffer,my_pipe_name.c_str());
+    connect_req.data_size=strlen(connect_req.buffer)+1;
+    connect_req.buffer[connect_req.data_size-1]='\0';
+     std::cout<<"attempt to write"<<std::endl;
      check_fd(write(fd[SERVER_PIPE],&connect_req,sizeof(connect_req)),fd,SIZE);
     //this will be written in the log file.
      std::cout<<"Miner #"<<id<<" sent connect request on"<<my_pipe_name<<std::endl;
 
     //this will block him untill recieving a block
+     check_fd(fcntl(fd[MY_PIPE], F_SETFL, O_RDONLY),fd,SIZE);
      check_fd(read(fd[MY_PIPE],block,sizeof(Block)),fd,SIZE);
 
      //update
@@ -43,8 +48,7 @@ Miner::Miner(int id_,int server_pipe_,const char* path): id(id_){
      update_target_parameters();
 
      //now I want it to be nonblocking, update the pipe mode to readonly + nonblocking
-     check_fd(fcntl(fd[MY_PIPE], F_SETFL, O_RDONLY | O_NONBLOCK),fd,SIZE);
-     
+     check_fd(fcntl(fd[MY_PIPE], F_SETFL, O_RDONLY|O_NONBLOCK),fd,SIZE);
     //thats it for init miner.
 }
 
@@ -81,11 +85,7 @@ void Miner::start_mining() {
 
     while (true) {
         //update if there is a new block.
-        if(read(fd[MY_PIPE],block,sizeof(Block))!=-1)
-        {
-            std::cout<<"Miner #"<<id<<"received block: ";
-            update_target_parameters();
-        }
+       
         unsigned int crc_res = calculate_hash_code(); //this also updates the timestamp
         //if the miner hits the right hash:
         if ((crc_res >> (32 - difficulty_target)) == 0) //update the server "socket" or "mail-box"
@@ -97,8 +97,7 @@ void Miner::start_mining() {
                     << ", difficulty "<<difficulty_target<<std::endl;
 
             //update and send block to server
-            auto new_block = Block(last_hash, height_target, difficulty_target, nonce, crc_res, id,
-                                   static_cast<int>(timestamp));
+            auto new_block = Block(last_hash, height_target, difficulty_target, nonce, crc_res, id, static_cast<int>(timestamp));
 
             //write this block to the server pipe.
             server_block_message message(id,sizeof(new_block),new_block);
