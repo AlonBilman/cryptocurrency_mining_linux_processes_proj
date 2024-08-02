@@ -1,10 +1,11 @@
 #include "global.h"
 
- const char* THIS_PATH = "/home/alon/Desktop/mta_files/";
+ const char* MAIN_PATH = "/mnt/mta/";
  const char* SERVER_PIPE_NAME = "server_pipe";
  const char* CONF_NAME = "mtacoin.conf";
  const char* BASE_PIPE_NAME = "miner_pipe_";
  const char* LOG_NAME = "mtacoinServer.log";
+ const char* LOG_PATH = "/var/log/";
 
 void check_fd(int fd, int my_log, int my_pipe)
 {
@@ -22,5 +23,3 @@ void check_fd(int fd, int my_log, int my_pipe)
         
 }
 
-void signal_handler() //SIGPIPE handler
-{}

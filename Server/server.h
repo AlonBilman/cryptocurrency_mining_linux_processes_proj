@@ -8,6 +8,7 @@
 #include "global.h"
 #include <signal.h>
 
+
 #define MAX_CHAIN_SIZE 100
 #define NEW_BLOCK 1
 #define CONNECT_REQ 2

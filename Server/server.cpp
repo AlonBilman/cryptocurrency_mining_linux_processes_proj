@@ -3,7 +3,7 @@
 
 Server::Server()
 {  
-     std::string my_log_name= THIS_PATH;
+     std::string my_log_name= LOG_PATH;
      my_log_name.append(LOG_NAME);
 
      my_log = open(my_log_name.c_str(),O_WRONLY | O_CREAT, 0644); 
@@ -25,7 +25,7 @@ Server::Server()
     
     
      //opening my pipe.
-     std::string my_pipe_name = THIS_PATH;
+     std::string my_pipe_name = MAIN_PATH;
      my_pipe_name.append(SERVER_PIPE_NAME);
      check_fd(mkfifo(my_pipe_name.c_str(),0666),my_log,NO_FD);
      my_pipe = open(my_pipe_name.c_str(),O_RDWR);
@@ -85,14 +85,14 @@ void Server::add_block_(Block &block_to_add) //adding to block_chain. making sur
 void Server::start() {
     //reading buffers
     char data_name[256];
-    std::cout<<"listening on "<<THIS_PATH<<SERVER_PIPE_NAME<<std::endl;
+    std::cout<<"listening on "<<MAIN_PATH<<SERVER_PIPE_NAME<<std::endl;
  
     while (true) 
     {
         //wait on pipe. start listening...
         msg read_m; 
         read(my_pipe,&read_m,sizeof(read_m)); // size of 3 ints.
-        switch (read_m.type)
+        switch (read_m.type) //what is the type of the message?
         {
         case CONNECT_REQ:
             read(my_pipe,&data_name,read_m.size);
@@ -114,17 +114,17 @@ void Server::start() {
                         write(miners_pipes[i],&next_block,sizeof(Block)); 
                         //handling SIGPIPE
                         if(errno == EPIPE) //error on write
-                                           //thats why we ignored ctrl+c sig.
+                                           //thats why we ignored SIGPIPE.
                         {
-                            close(miners_pipes[i]);
-                            miners_pipes[i]=NO_FD;
+                            close(miners_pipes[i]); //close the server side of the pipe. 
+                            miners_pipes[i]=NO_FD; //update the fds vector
                         }
 
                     }
                 }
             }
             break;
-        default:
+        default: //just in case
             std::cout<<"Could not identify the message..."<<std::endl;
             break;
         }
@@ -159,7 +159,7 @@ unsigned int hash(int height, int nonce, time_t timestamp, unsigned int last_has
 void Server::set_difficulty()
 {
     int difficulty=0;
-    std::string conf_file_name = THIS_PATH;
+    std::string conf_file_name = MAIN_PATH;
     conf_file_name.append(CONF_NAME);
 
     std::ifstream file(conf_file_name); 
@@ -179,8 +179,8 @@ void Server::set_difficulty()
     else {
         //this will be written inside the log file
         std::cout << "Error opening config file..."<<std::endl;
-        std::cout<<"difficulty set to 8 by default..."<<std::endl;
-        difficulty_target = 8;
+        std::cout<<"difficulty set to 10 by default..."<<std::endl;
+        difficulty_target = 10;
     }
 
     difficulty_target = difficulty;
