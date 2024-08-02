@@ -1,11 +1,11 @@
 #include "miner.h"
 
 
-Miner::Miner(int id_,int server_pipe_,const char* path): id(id_){
+Miner::Miner(int id_,int server_pipe_): id(id_){
 
     fd[SERVER_PIPE] = server_pipe_;
 
-     std::string my_log_name= path;
+     std::string my_log_name= LOG_PATH;
      my_log_name.append(LOG_NAME);
      my_log_name.append(std::to_string(id));
      fd[LOG_FILE] = open(my_log_name.c_str(),O_WRONLY | O_CREAT, 0644); //only I need to write
@@ -20,7 +20,7 @@ Miner::Miner(int id_,int server_pipe_,const char* path): id(id_){
         exit(EXIT_FAILURE);               
     }
      //opening my pipe.
-     std::string my_pipe_name = path;
+     std::string my_pipe_name = MAIN_PATH;
      my_pipe_name.append(BASE_PIPE_NAME);
      my_pipe_name.append(std::to_string(id));
 
@@ -103,7 +103,7 @@ void Miner::start_mining() {
             std::cout << "Miner #" << id
                     << " mined a new Block #" << std::dec << height_target
                     << ", With the hash 0x" << std::hex << crc_res 
-                    << ", difficulty "<<difficulty_target<<std::endl;
+                    << ", difficulty "<<std::dec<<difficulty_target<<std::endl;
 
             //update and send block to server
             auto new_block = Block(last_hash, height_target, difficulty_target, nonce, crc_res, id, static_cast<int>(timestamp));

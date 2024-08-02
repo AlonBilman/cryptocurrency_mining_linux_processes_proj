@@ -1,16 +1,17 @@
 #include "global.h"
 
-  const char* THIS_PATH = "/home/alon/Desktop/mta_files/";
+ const char* MAIN_PATH = "/mnt/mta/";
  const char* SERVER_PIPE_NAME = "server_pipe";
  const char* CONF_NAME = "mtacoin.conf";
  const char* BASE_PIPE_NAME = "miner_pipe_";
- const char* LOG_NAME = "mtacoin.log";
+ const char* LOG_NAME = "mtacoinMiner.log";
+ const char* LOG_PATH = "/var/log/";
 
 void check_fd(int fd, int* fd_s ,int size)
 {
      if(fd==-1) {
         //will be written in the log-file.
-        perror("Error with fd");
+        perror("Error with fd\n");
         if(fd_s!=nullptr){ //closing all the opened fds.
              for(int i=0;i<size;++i)
                 {

@@ -32,7 +32,7 @@ private:
 
 public:
     //constructor
-    Miner(int id,int server_pipe,const char* path);
+    Miner(int id,int server_pipe);
     //functions
     void update_target_parameters();
     void start_mining();
