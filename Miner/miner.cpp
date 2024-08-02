@@ -25,23 +25,20 @@ Miner::Miner(int id_,int server_pipe_): id(id_){
      my_pipe_name.append(std::to_string(id));
 
      check_fd(mkfifo(my_pipe_name.c_str(),0666),fd,SIZE);
-     
-     fd[MY_PIPE]=open(my_pipe_name.c_str(),O_RDONLY| O_NONBLOCK);
+     //opening the pipe - blocking for the first block.
+     fd[MY_PIPE]=open(my_pipe_name.c_str(),O_RDWR);
      check_fd(fd[MY_PIPE],fd,SIZE);
-    
-     //making the connection message. 
 
+
+     //making the connection message. 
      server_connect_message connect_req(id);
      strcpy(connect_req.buffer,my_pipe_name.c_str());
      connect_req.buffer[strlen(connect_req.buffer)]='\0';
      connect_req.data_size=sizeof(connect_req.buffer);
-     std::cout<<"attempt to write"<<std::endl;
+     std::cout<<"attempt to write..."<<std::endl;
      check_fd(write(fd[SERVER_PIPE],&connect_req,sizeof(connect_req)),fd,SIZE);
     //this will be written in the log file.
      std::cout<<"Miner #"<<id<<" sent connect request on"<<my_pipe_name<<std::endl;
-
-     //set mine's pipe to blocking mode temporarily to wait for the first block
-     check_fd(fcntl(fd[MY_PIPE], F_SETFL, fcntl(fd[MY_PIPE], F_GETFL) & ~O_NONBLOCK), fd, SIZE);
 
      //read - > blocked untill recieving data
      check_fd(read(fd[MY_PIPE],&block,sizeof(Block)),fd,SIZE);
@@ -50,8 +47,12 @@ Miner::Miner(int id_,int server_pipe_): id(id_){
      std::cout<<"Miner #"<<id<<" received first block: ";
      update_target_parameters();
 
-     //now I want it to be nonblocking, update the pipe mode to readonly + nonblocking
-     check_fd(fcntl(fd[MY_PIPE], F_SETFL, fcntl(fd[MY_PIPE], F_GETFL) | O_NONBLOCK), fd, SIZE);
+     //now I want it to be nonblocking, update the pipe mode to readonly + nonblocking // **we've tried to use fcntl. It did not work.
+     close(fd[MY_PIPE]);
+     
+     fd[MY_PIPE]=open(my_pipe_name.c_str(),O_RDONLY|O_NONBLOCK);
+     check_fd(fd[MY_PIPE],fd,SIZE);
+
     //thats it for init miner.
 }
 

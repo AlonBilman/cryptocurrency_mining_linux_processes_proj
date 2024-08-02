@@ -1,6 +1,6 @@
 #include "global.h"
 
- const char* MAIN_PATH = "/mnt/mta/";
+const char* MAIN_PATH = "/mnt/mta/";
  const char* SERVER_PIPE_NAME = "server_pipe";
  const char* CONF_NAME = "mtacoin.conf";
  const char* BASE_PIPE_NAME = "miner_pipe_";
