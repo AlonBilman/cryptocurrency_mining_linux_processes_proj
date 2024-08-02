@@ -7,6 +7,7 @@
  const char* LOG_NAME = "mtacoinServer.log";
  const char* LOG_PATH = "/var/log/";
 
+
 void check_fd(int fd, int my_log, int my_pipe)
 {
      if(fd==-1) {

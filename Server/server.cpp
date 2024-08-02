@@ -109,13 +109,14 @@ void Server::start() {
                 add_block_(next_block);
                 for(int i=0;i<miners_pipes.size();++i)
                 {
-                    if(miners_pipes[i]!=NO_FD) //if its a deleted fd 
+                    if(miners_pipes[i]!=NO_FD) //if its not deleted yet 
                     {
                         write(miners_pipes[i],&next_block,sizeof(Block)); 
                         //handling SIGPIPE
                         if(errno == EPIPE) //error on write
                                            //thats why we ignored SIGPIPE.
                         {
+                            errno = 0; //reset errno 
                             close(miners_pipes[i]); //close the server side of the pipe. 
                             miners_pipes[i]=NO_FD; //update the fds vector
                         }
@@ -179,8 +180,8 @@ void Server::set_difficulty()
     else {
         //this will be written inside the log file
         std::cout << "Error opening config file..."<<std::endl;
-        std::cout<<"difficulty set to 10 by default..."<<std::endl;
-        difficulty_target = 10;
+        std::cout<<"difficulty set to 16 by default..."<<std::endl;
+        difficulty_target = 16;
     }
 
     difficulty_target = difficulty;
