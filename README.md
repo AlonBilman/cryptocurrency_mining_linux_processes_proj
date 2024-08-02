@@ -4,8 +4,8 @@ The files are :
 3. launcher.sh
 ---------------------------------------------------------
 
-docker hub links : server image : 
- - https://hub.docker.com/repository/docker/alonbilman/coin_server_img/general 
+docker hub links : 
+ - server image : https://hub.docker.com/repository/docker/alonbilman/coin_server_img/general 
  - miner image : https://hub.docker.com/repository/docker/alonbilman/coin_miner_img/general
 				   
 The image sizes are 77.9 MB (both)
