@@ -1,11 +1,12 @@
 #include "global.h"
 
 const char* MAIN_PATH = "/mnt/mta/";
- const char* SERVER_PIPE_NAME = "server_pipe";
- const char* CONF_NAME = "mtacoin.conf";
- const char* BASE_PIPE_NAME = "miner_pipe_";
- const char* LOG_NAME = "mtacoinMiner.log";
- const char* LOG_PATH = "/var/log/";
+const char* SERVER_PIPE_NAME = "server_pipe";
+const char* CONF_NAME = "mtacoin.conf";
+const char* BASE_PIPE_NAME = "miner_pipe_";
+const char* LOG_NAME = "mtacoinMiner.log";
+const char* LOG_PATH = "/var/log/";
+
 
 void check_fd(int fd, int* fd_s ,int size)
 {

@@ -7,7 +7,6 @@ Miner::Miner(int id_,int server_pipe_): id(id_){
 
      std::string my_log_name= LOG_PATH;
      my_log_name.append(LOG_NAME);
-     my_log_name.append(std::to_string(id));
      fd[LOG_FILE] = open(my_log_name.c_str(),O_WRONLY | O_CREAT, 0644); //only I need to write
      check_fd(fd[LOG_FILE],fd,SIZE);
 

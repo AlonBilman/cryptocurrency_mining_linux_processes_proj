@@ -1,17 +1,20 @@
-
-FROM ubuntu:22.04
-
+#building the binary code
+FROM ubuntu:22.04 as builder
 
 WORKDIR /root/mtacoin_miner_app
 COPY . .
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y \
     g++ \
     libz-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*\
-    && g++ -std=c++17 -o coin_miner main.cpp miner.cpp block.cpp global.cpp -lz \
-    && rm -f main.cpp miner.cpp block.cpp global.cpp Dockerfile serverMessage.h miner.h global.h block.h
+    && g++ -std=c++17 -o coin_miner main.cpp miner.cpp block.cpp global.cpp -lz 
+
+#fresh ubuntu with only the binery code
+FROM ubuntu:22.04
+
+WORKDIR /root/mtacoin_miner_app
+
+COPY --from=builder /root/mtacoin_miner_app/coin_miner .
 
 CMD ["./coin_miner"]
