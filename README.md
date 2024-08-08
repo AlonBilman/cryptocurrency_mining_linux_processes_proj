@@ -32,6 +32,5 @@ You can run the program with the script provided (launcher.sh)
  
 (!) Make sure running the script with sudo in order to change /tmp and run docker-commands.
 
-(!) Run the script with sudo (for docker and for /tmp) 
 
 
